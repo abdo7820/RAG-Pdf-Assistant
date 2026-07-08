@@ -9,7 +9,7 @@ them to the Flask app so routes can reach them via `current_app`.
 import logging
 import os
 
-from flask import Flask, jsonify
+from flask import Flask, render_template
 
 import config
 from api.routes import bp as api_bp
@@ -32,9 +32,11 @@ logger = logging.getLogger(__name__)
 
 def create_app() -> Flask:
     app = Flask(__name__)
-    app.config["MAX_CONTENT_LENGTH"] = 50 * 1024 * 1024  # 50 MB upload limit
+    app.config["MAX_CONTENT_LENGTH"] = 50 * 1024 * 1024
 
-    # Initialize RAG pipeline once at startup
+    # -------------------------------
+    # Initialize RAG pipeline
+    # -------------------------------
     app.ingestion = PDFIngestion()
     app.chunker = TextChunker()
     app.embedding_model = EmbeddingModel()
@@ -56,25 +58,16 @@ def create_app() -> Flask:
             "Qwen (local) will still work."
         )
 
-    @app.route("/", methods=["GET"])
+    # -------------------------------
+    # Web UI
+    # -------------------------------
+    @app.route("/")
     def home():
-        return jsonify(
-            {
-                "name": "RAG PDF Assistant API",
-                "status": "running",
-                "version": "1.0.0",
-                "endpoints": {
-                    "GET /": "API information",
-                    "GET /health": "Health check",
-                    "POST /chat": "Ask questions",
-                    "POST /upload-pdf": "Upload a PDF",
-                    "GET /models": "Available models",
-                    "POST /switch-model": "Switch active model",
-                    "GET /sources": "List uploaded PDFs",
-                },
-            }
-        )
+        return render_template("index.html")
 
+    # -------------------------------
+    # API Routes
+    # -------------------------------
     app.register_blueprint(api_bp)
 
     logger.info("RAG Flask app initialized.")
